@@ -20,6 +20,7 @@ const OrderScreen = (props) => {
           <OrderItem
             amount={itemData.item.totalAmount}
             date={itemData.item.readableDate}
+            items = {itemData.item.items}
           />
         );
       }}
@@ -30,6 +31,10 @@ const OrderScreen = (props) => {
 OrderScreen.navigationOptions = (navData) => {
   return {
     headerTitle: "Your Orders",
+    headerStyle: {
+      backgroundColor: Colors.primary,
+    },
+    headerTintColor: "white",
     headerLeft: () => (
       <HeaderButtons HeaderButtonComponent={HeaderButton}>
         <Item

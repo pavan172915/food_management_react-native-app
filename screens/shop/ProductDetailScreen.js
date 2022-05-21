@@ -22,17 +22,26 @@ const ProductDetailScreen = (props) => {
   return (
     <ScrollView>
       <Image style={styles.image} source={{ uri: selectedProduct.imageUrl }} />
-      <View style={styles.actions}>
+      {/* <View style={styles.actions}>
         <Button
           color={Colors.primary}
           title="Add To Cart"
           onPress={() => {
             dispatch(cartActions.addToCart(selectedProduct ));
           }}
-        />
-      </View>
+        /> 
+        </View>*/}
       <Text style={styles.price}>${selectedProduct.price.toFixed(2)}</Text>
       <Text style={styles.desc}>{selectedProduct.description}</Text>
+      <View style={{flex:1,justifyContent:'flex-end',marginTop:200}}>
+      <Button
+          color={Colors.primary}
+          title="Add To Cart"
+          onPress={() => {
+            dispatch(cartActions.addToCart(selectedProduct ));
+          }}
+        />
+        </View>
     </ScrollView>
   );
 };
