@@ -1,5 +1,11 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, Button } from "react-native";
+import React, { useCallback, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Button,
+  ActivityIndicator,
+} from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { TouchableOpacity } from "react-native-gesture-handler";
 import { Icon } from "react-native-elements/dist/icons/Icon";
@@ -7,6 +13,7 @@ import { FlatList } from "react-native-gesture-handler";
 import { HeaderButtons, Item } from "react-navigation-header-buttons";
 import HeaderButton from "../../components/UI/HeaderButton";
 import * as cartActions from "../../store/actions/cart";
+import * as productActions from "../../store/actions/product";
 import { useEffect } from "react";
 import ProductItem from "../../components/shop/ProductItem";
 import Colors from "../../constants/Colors";
@@ -14,7 +21,9 @@ import MainButton from "../../components/UI/MainButton";
 
 const ProductStartScreen = (props) => {
   console.log("Start");
-
+  const [isDataFetched, setDataIsFetched] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState();
   //const [cartCount,setCartCount] = useState(0);
   //const start = props.navigation.actions[1].state.params.cartCount;
   //console.log("start",start);
@@ -48,14 +57,67 @@ const ProductStartScreen = (props) => {
   const products = useSelector((state) => state.products.availableProducts);
 
   const dispatch = useDispatch();
+  const loadProducts = useCallback(async () => {
+    setError(null);
+    setIsRefreshing(true);
+    try {
+      await dispatch(productActions.fetchProducts());
+    } catch (err) {
+      setError(err.message);
+    }
+    setIsRefreshing(false);
+  }, [dispatch]);
+  useEffect(() => {
+    const willFocustSubscription = props.navigation.addListener(
+      "willFocus",
+      loadProducts
+    );
+    return () => {
+      willFocustSubscription.remove(); // with useEffect we can return a function where we can do cleanup hence it is called a cleanUp function
+      // this cleanUp function executes before the component is being destroyed...
+    };
+  }, [loadProducts]);
+  useEffect(() => {
+    loadProducts().then(() => {
+      setDataIsFetched(true);
+    });
+  }, [dispatch, loadProducts]);
   const selectItemHandler = (id, title) => {
     props.navigation.navigate("ProductDetail", {
       productId: id,
       productTitle: title,
     });
   };
+  if (error) {
+    return (
+      <View style={styles.loader}>
+        <Text>An Error Occured!!</Text>
+        <Button
+          title="Try Again?"
+          onPress={loadProducts}
+          color={Colors.primary}
+        />
+      </View>
+    );
+  }
+  if (!isDataFetched) {
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
+  if (isDataFetched && products.length === 0) {
+    return (
+      <View style={styles.loader}>
+        <Text>No Products Found!!</Text>
+      </View>
+    );
+  }
   return (
     <FlatList
+      refreshing={isRefreshing}
+      onRefresh={loadProducts}
       data={products}
       renderItem={(itemData) => {
         return (
@@ -153,8 +215,8 @@ ProductStartScreen.navigationOptions = (navData) => {
                   </View>
                 ) : <Text>{10}</Text>}
         </View> */}
-        
-         <View style={{ alignItems: "center", justifyContent: "center" }}>
+
+        <View style={{ alignItems: "center", justifyContent: "center" }}>
           <TouchableOpacity
             onPress={() => {
               console.log("Pressed");
@@ -209,5 +271,13 @@ ProductStartScreen.navigationOptions = (navData) => {
     ),
   };
 };
+
+const styles = StyleSheet.create({
+  loader: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});
 
 export default ProductStartScreen;

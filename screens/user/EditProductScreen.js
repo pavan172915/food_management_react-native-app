@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useEffect, useCallback, useReducer, useState } from "react";
 import {
   View,
   Text,
@@ -6,82 +6,195 @@ import {
   ScrollView,
   TextInput,
   Alert,
+  KeyboardAvoidingView,
+  ActivityIndicator,
 } from "react-native";
 import { HeaderButtons, Item } from "react-navigation-header-buttons";
 import HeaderButton from "../../components/UI/HeaderButton";
 import Colors from "../../constants/Colors";
 import { useSelector, useDispatch } from "react-redux";
 import * as productsActions from "../../store/actions/product";
+import Input from "../../components/UI/Input";
+
+const FORM_INPUT_UPDATE = "FORM_INPUT_UPDATE";
+
+const formReducer = (state, action) => {
+  if (action.type == FORM_INPUT_UPDATE) {
+    const updatedValues = {
+      ...state.inputValues,
+      [action.input]: action.value,
+    };
+    const updatedValidities = {
+      ...state.inputValidates,
+      [action.input]: action.isValid,
+    };
+    let updatedFormIsValid = true;
+    console.log(updatedValidities);
+    for (const key in updatedValidities) {
+      updatedFormIsValid = updatedFormIsValid && updatedValidities[key];
+    }
+    console.log("final check for form validity", updatedFormIsValid);
+    return {
+      isFormValid: updatedFormIsValid,
+      inputValues: updatedValues,
+      inputValidates: updatedValidities,
+    };
+  }
+  return state;
+};
 
 const EditProductScreen = (props) => {
+  const [isDataNotFetched, setisDataNotFetched] = useState(false);
+  const [error, setError] = useState();
   const dispatch = useDispatch();
   const productId = props.navigation.getParam("productId");
+  console.log("ID", productId);
   const editedProduct = useSelector((state) =>
     state.products.userProducts.find((prod) => prod.id === productId)
   );
-  const [title, setTitle] = useState(editedProduct ? editedProduct.title : "");
-  const [imageUrl, setImageUrl] = useState(
-    editedProduct ? editedProduct.imageUrl : ""
-  );
-  const [price, setPrice] = useState("");
-  const [description, setDescription] = useState(
-    editedProduct ? editedProduct.description : ""
-  );
-  const submitHandler = useCallback(() => {
-    console.log("Form Submitting...");
-    if (editedProduct) {
-      dispatch(
-        productsActions.updateProduct(productId, title, description, imageUrl)
-      );
-    } else {
-      dispatch(
-        productsActions.createProduct(title, description, imageUrl, +price)
-      );
+  //console.log('Edit Product!',editedProduct)
+
+  const [formState, dispatchFormState] = useReducer(formReducer, {
+    inputValues: {
+      title: editedProduct ? editedProduct.title : "",
+      imageUrl: editedProduct ? editedProduct.imageUrl : "",
+      description: editedProduct ? editedProduct.description : "",
+      price: "",
+    },
+    inputValidates: {
+      title: editedProduct ? true : false,
+      imageUrl: editedProduct ? true : false,
+      description: editedProduct ? true : false,
+      price: editedProduct ? true : false,
+    },
+    isFormValid: editedProduct ? true : false,
+  });
+
+  useEffect(() => {
+    if (error) {
+      Alert.alert("Error Occured!", error, [{ text: "OK" }]);
     }
-    props.navigation.goBack();
-  }, [dispatch, productId, description, imageUrl, title]);
+    //setisDataNotFetched(false)
+  }, [error]);
+
+  const submitHandler = useCallback(async () => {
+    console.log("Form Submitting...");
+    console.log("Form Valid", formState.isFormValid);
+    if (!formState.isFormValid) {
+      Alert.alert(
+        "Wrong Input",
+        "Please check the input fields and try again!",
+        [{ text: "Ok" }]
+      );
+      return;
+    }
+    setisDataNotFetched(true);
+    setError(null);
+    try {
+      if (editedProduct) {
+        await dispatch(
+          productsActions.updateProduct(
+            productId,
+            formState.inputValues.title,
+            formState.inputValues.description,
+            formState.inputValues.imageUrl
+          )
+        );
+      } else {
+        await dispatch(
+          productsActions.createProduct(
+            formState.inputValues.title,
+            formState.inputValues.description,
+            formState.inputValues.imageUrl,
+            +formState.inputValues.price
+          )
+        );
+      }
+      props.navigation.goBack();
+    } catch (err) {
+      setError(err.message);
+    }
+    setisDataNotFetched(false);
+  }, [formState]);
   useEffect(() => {
     props.navigation.setParams({ submit: submitHandler });
   }, [submitHandler]);
-  return (
-    <ScrollView>
-      <View style={styles.form}>
-        <View style={styles.formControl}>
-          <Text style={styles.label}>Title</Text>
-          <TextInput
-            style={styles.input}
-            value={title}
-            onChangeText={(text) => setTitle(text)}
-          />
-        </View>
-        <View style={styles.formControl}>
-          <Text style={styles.label}>ImageUrl</Text>
-          <TextInput
-            style={styles.input}
-            value={imageUrl}
-            onChangeText={(text) => setImageUrl(text)}
-          />
-        </View>
-        {editedProduct ? null : (
-          <View style={styles.formControl}>
-            <Text style={styles.label}>Price</Text>
-            <TextInput
-              style={styles.input}
-              value={price}
-              onChangeText={(text) => setPrice(text)}
-            />
-          </View>
-        )}
-        <View style={styles.formControl}>
-          <Text style={styles.label}>Description</Text>
-          <TextInput
-            style={styles.input}
-            value={description}
-            onChangeText={(text) => setDescription(text)}
-          />
-        </View>
+  const inputChangeHandler = useCallback(
+    (inputIdentifer, inputValue, inputValidity) => {
+      console.log("In input change handler...", inputValue);
+      dispatchFormState({
+        type: FORM_INPUT_UPDATE,
+        value: inputValue,
+        isValid: inputValidity,
+        input: inputIdentifer,
+      });
+    },
+    [dispatchFormState]
+  ); // using useCallBack with dispatchFormState as dependecy since the function inside it need not trigger every time the component re-builds
+  if (isDataNotFetched) {
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" color={Colors.primary} />
       </View>
-    </ScrollView>
+    );
+  }
+  return (
+    <KeyboardAvoidingView
+      behavior="padding"
+      keyboardVerticalOffset={100}
+      style={{ flex: 1 }}
+    >
+      <ScrollView>
+        <View style={styles.form}>
+          <Input
+            id="title"
+            label="Title"
+            errorText="Please Enter A Valid Title!"
+            returnKeyType="next"
+            onInputChange={inputChangeHandler}
+            initialValue={editedProduct ? editedProduct.title : ""}
+            initialValid={!!editedProduct}
+            value={"pavanr"}
+            required
+          />
+          <Input
+            id="imageUrl"
+            label="ImageUrl"
+            errorText="Please Enter A Valid Image URL!"
+            returnKeyType="next"
+            initialValue={editedProduct ? editedProduct.imageUrl : ""}
+            initialValid={!!editedProduct}
+            required
+            onInputChange={inputChangeHandler}
+          />
+          {editedProduct ? null : (
+            <Input
+              id="price"
+              label="price"
+              errorText="Please Enter A Valid Price!"
+              returnKeyType="next"
+              keyboardType="decimal-pad"
+              required
+              min={1}
+              onInputChange={inputChangeHandler}
+            />
+          )}
+          <Input
+            id="description"
+            label="Description"
+            errorText="Please Enter A Valid Description!"
+            returnKeyType="done"
+            multiline
+            numberOfLines={3}
+            initialValue={editedProduct ? editedProduct.description : ""}
+            initialValid={!!editedProduct}
+            required
+            minLength={5}
+            onInputChange={inputChangeHandler}
+          />
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -114,18 +227,10 @@ const styles = StyleSheet.create({
   form: {
     margin: 20,
   },
-  formControl: {
-    width: "100%",
-  },
-  label: {
-    fontFamily: "open-sans-bold",
-    marginVertical: 8,
-  },
-  input: {
-    paddingHorizontal: 2,
-    paddingVertical: 5,
-    borderBottomColor: "#ccc",
-    borderBottomWidth: 1,
+  loader: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 

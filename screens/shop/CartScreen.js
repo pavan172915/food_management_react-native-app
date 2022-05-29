@@ -1,14 +1,22 @@
-import React from "react";
-import { View, Text, FlatList, Button, StyleSheet } from "react-native";
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  Button,
+  StyleSheet,
+  ActivityIndicator,
+} from "react-native";
 import { useSelector, useDispatch } from "react-redux";
 import CartItem from "../../components/shop/CartItem";
 import * as cartActions from "../../store/actions/cart";
 import * as orderActions from "../../store/actions/orders";
 import Colors from "../../constants/Colors";
-import Card from '../../components/UI/Card'
+import Card from "../../components/UI/Card";
 
 const CartScreen = (props) => {
-    //console.log(props.navigation)
+  //console.log(props.navigation)
+  const [isLoading, setisLoading] = useState(false);
   const cartTotalAmount = useSelector((state) => state.cart.totalAmount);
   const cartItems = useSelector((state) => {
     const transformedCart = [];
@@ -26,35 +34,42 @@ const CartScreen = (props) => {
     });
   });
   const dispatch = useDispatch();
+  const sendorderHandler = async () => {
+    setisLoading(true);
+    await dispatch(orderActions.addOrder(cartItems, cartTotalAmount));
+    setisLoading(false);
+    props.navigation.navigate("ProductsOverview", {
+      cartCount: 0,
+    });
+  };
   return (
     <View style={styles.screen}>
       <Card style={styles.itemsummary}>
         <Text style={styles.sumText}>
           {/* to ensure we don't get -values in place of amount we perform round*100/100 */}
-          Total:<Text style={styles.amount}> ${Math.round(cartTotalAmount.toFixed(2) *100)/100}</Text>
+          Total:
+          <Text style={styles.amount}>
+            {" "}
+            ${Math.round(cartTotalAmount.toFixed(2) * 100) / 100}
+          </Text>
         </Text>
-        <Button
-        style={{borderRadius:20}}
-          title="Order Now?"
-          onPress={() => {
-            console.log("ok");
-            //props.navigation.actions[1].state.params.cartCount = 0;
-            // console.log(props.navigation.state);
-            // if(props.navigation.state.params){
-            //     console.log("Ordered ",props.navigation.state.params.cartCount);
-            //     props.navigation.state.params.cartCount = 0;
-            // }
-            // else{
-            //     console.log("Nothing Change");
-            // }
-    
-            dispatch(orderActions.addOrder(cartItems, cartTotalAmount));
-            props.navigation.navigate("ProductsOverview",{
-              cartCount:0
-            })
-          }}
-          disabled={cartItems.length === 0}
-        />
+        {isLoading ? (
+          <View style={styles.loader}>
+            <ActivityIndicator size="large" color={Colors.primary} />
+          </View>
+        ) : (
+          <Button
+            style={{ borderRadius: 20 }}
+            title="Order Now?"
+            // onPress={() => {
+            //   props.navigation.navigate("ProductsOverview",{
+            //     cartCount:0
+            //   })
+            // }}
+            onPress={sendorderHandler}
+            disabled={cartItems.length === 0}
+          />
+        )}
       </Card>
       <View>
         <FlatList
@@ -63,7 +78,7 @@ const CartScreen = (props) => {
           renderItem={(itemData) => {
             return (
               <CartItem
-              deletable={true}
+                deletable={true}
                 quantity={itemData.item.quantity}
                 title={itemData.item.productTitle}
                 amount={itemData.item.sum}
@@ -94,8 +109,8 @@ const styles = StyleSheet.create({
   },
   amount: {
     color: Colors.primary,
-    marginLeft:20,
-    paddingLeft:20
+    marginLeft: 20,
+    paddingLeft: 20,
   },
   itemsummary: {
     flexDirection: "row",
@@ -103,6 +118,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 20,
     padding: 10,
+  },
+  loader: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
   },
 });
 
