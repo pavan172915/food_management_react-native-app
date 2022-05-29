@@ -9,7 +9,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { TouchableOpacity } from "react-native-gesture-handler";
 import { Icon } from "react-native-elements/dist/icons/Icon";
-import { FlatList } from "react-native-gesture-handler";
+import { FlatList } from "react-native";
 import { HeaderButtons, Item } from "react-navigation-header-buttons";
 import HeaderButton from "../../components/UI/HeaderButton";
 import * as cartActions from "../../store/actions/cart";
@@ -103,7 +103,7 @@ const ProductStartScreen = (props) => {
   if (!isDataFetched) {
     return (
       <View style={styles.loader}>
-        <ActivityIndicator size="large" color={Colors.primary} />
+        <ActivityIndicator size="large" color={Colors.blue} />
       </View>
     );
   }

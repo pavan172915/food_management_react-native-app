@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { FlatList, Button, Platform, Alert } from "react-native";
 import ProductItem from "../../components/shop/ProductItem";
 import { useSelector, useDispatch } from "react-redux";
@@ -8,7 +8,9 @@ import Colors from "../../constants/Colors";
 import * as productsActions from "../../store/actions/product";
 
 const UserProductScreen = (props) => {
+  const [isDataFetched, setDataIsFetched] = useState(false);
   const userProducts = useSelector((state) => state.products.userProducts);
+  console.log('USER PRODUCTS',userProducts)
   const deleteHandler = (id) => {
     Alert.alert("Do you want to delete this item?",'', [
       { text: "No", style: "default" },

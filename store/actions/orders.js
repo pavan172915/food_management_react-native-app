@@ -1,12 +1,13 @@
 import Order from "../../models/order";
 
 export const ADD_ORDER = "ADD_ORDER";
-export const SET_ORDER = "SET_ORDER"
+export const SET_ORDER = "SET_ORDER";
 
-export const fetchOrders = ()=>{
-  return async (dispatch)=>{
+export const fetchOrders = () => {
+  return async (dispatch, getState) => {
+    const userId = getState().auth.userId;
     try {
-      const response = await fetch(`${fireBaseUrl}/orders/u1.json`, {
+      const response = await fetch(`${fireBaseUrl}/orders/${userId}.json`, {
         method: "GET", // fetch is a default get request so we do not need to set method,headers and body
       });
       if (!response.ok) {
@@ -16,31 +17,41 @@ export const fetchOrders = ()=>{
       const loadedProductsFromDB = [];
       for (const key in responseData) {
         loadedProductsFromDB.push(
-          new Order(key,responseData[key].cartItems,responseData[key].totalAmount,new Date(responseData[key].date))
+          new Order(
+            key,
+            responseData[key].cartItems,
+            responseData[key].totalAmount,
+            new Date(responseData[key].date)
+          )
         );
       }
-      console.log(loadedProductsFromDB)
+      console.log(loadedProductsFromDB);
       dispatch({ type: SET_ORDER, orders: loadedProductsFromDB });
     } catch (err) {
       throw err;
     }
-  }
-}
+  };
+};
 const fireBaseUrl = "https://local-shop-app-default-rtdb.firebaseio.com/";
 export const addOrder = (cartItems, totalAmount) => {
-  return async (dispatch) => {
-    const date = new Date()
-    const response = await fetch(`${fireBaseUrl}/orders/u1.json`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        cartItems,
-        totalAmount,
-        date: date.toISOString(),
-      }),
-    });
+  return async (dispatch, getState) => {
+    const date = new Date();
+    const token = getState().auth.token;
+    const userId = getState().auth.userId;
+    const response = await fetch(
+      `${fireBaseUrl}/orders/${userId}.json?auth=${token}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          cartItems,
+          totalAmount,
+          date: date.toISOString(),
+        }),
+      }
+    );
     const responseData = await response.json();
     if (!response.ok) {
       throw new Error("Somethig Went Wrong!");
@@ -51,7 +62,7 @@ export const addOrder = (cartItems, totalAmount) => {
         id: responseData.name,
         items: cartItems,
         amount: totalAmount,
-        date:date
+        date: date,
       },
     });
   };
