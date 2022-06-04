@@ -1,4 +1,4 @@
-import React, { useReducer, useCallback, useState,useEffect } from "react";
+import React, { useReducer, useCallback, useState,useEffect, useRef } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -103,6 +103,7 @@ useEffect(()=>{
     }
     
   };
+  const passwordRef = useRef(null)
   return (
     <KeyboardAvoidingView
       style={styles.screen}
@@ -116,12 +117,14 @@ useEffect(()=>{
               id="email"
               label="E-Mail"
               keyboardType="email-address"
+              returnKeyType='next'
               required
               email
               autoCapitalize="none"
               errorText="Please Enter a Valid E-Mail Address.."
               onInputChange={inputChangeHandler}
               intitalValue=""
+
             />
             <Input
               id="password"
@@ -148,8 +151,8 @@ useEffect(()=>{
             </View>
             <View style={styles.buttonContainer}>
               <Button
-                title={`Switch to ${isSignUp ? "Login" : "Sign Up"}`}
-                color={Colors.accent}
+                title={`Switch to ${isSignUp ? "Login?" : "Sign Up?"}`}
+                color={Colors.blue}
                 onPress={() => {
                   setIsSignUp((previousState) => !previousState);
                 }}

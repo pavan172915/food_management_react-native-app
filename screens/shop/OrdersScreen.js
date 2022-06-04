@@ -7,6 +7,7 @@ import { useSelector, useDispatch } from "react-redux";
 import Colors from "../../constants/Colors";
 import OrderItem from "../../components/shop/OrderItem";
 import * as orderActions from "../../store/actions/orders";
+import ModalCard from "../../components/UI/ModalCard";
 
 const OrderScreen = (props) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -23,6 +24,12 @@ const OrderScreen = (props) => {
       <View style={styles.loader}>
         <ActivityIndicator size='large' color={Colors.primary}/>
       </View>
+    )
+  }
+  if(orders.length === 0){
+    const img = require('../../components/UI/O.jpeg')
+    return (
+      <ModalCard image={img} mainTitle="No Orders Found" secondTitle="Book Some Delicious Food Items Now 🥤" navigation={props.navigation} />
     )
   }
   return (

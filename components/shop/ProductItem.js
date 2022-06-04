@@ -16,6 +16,7 @@ import Card from "../UI/Card";
 
 const ProductItem = (props) => {
   const selectItemHandler = (id, title) => {
+    console.log('here')
     props.navigation.navigate("ProductDetail", {
       productId: id,
       productTitle: title,

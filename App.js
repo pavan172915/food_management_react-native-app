@@ -2,16 +2,18 @@ import { StatusBar } from "expo-status-bar";
 import { StyleSheet, Text, View } from "react-native";
 import { createStore, combineReducers, applyMiddleware } from "redux";
 import { Provider } from "react-redux";
+import { NavigationContainer } from "@react-navigation/native";
 import AppLoading from "expo-app-loading";
 import * as Font from "expo-font";
 import ShopNavigator from "./navigation/ShopNavigator";
 import AuthReducer from "./store/reducers/auth";
-import  NavigationContainer  from './navigation/NavigationContainer'
+import Navigationcontainer from "./navigation/NavigationContainer";
 import productsReducer from "./store/reducers/product";
 import ordersReducer from "./store/reducers/orders";
 import cartReducer from "./store/reducers/cart";
 import { useState } from "react";
 import ReduxThunk from "redux-thunk";
+import BottomNavigator from "./components/UI/BottomNavigator";
 
 const rootReducer = combineReducers({
   products: productsReducer,
@@ -46,7 +48,10 @@ export default function App() {
   }
   return (
     <Provider store={store}>
-      <NavigationContainer />
+      <NavigationContainer>
+        {/* <BottomNavigator /> */}
+         <Navigationcontainer />
+      </NavigationContainer>
     </Provider>
   );
 }

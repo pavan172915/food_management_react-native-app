@@ -1,18 +1,31 @@
-import React, { useState } from "react";
-import { FlatList, Button, Platform, Alert } from "react-native";
+import React, { useEffect, useState } from "react";
+import { FlatList, Button, Platform, Alert, View } from "react-native";
 import ProductItem from "../../components/shop/ProductItem";
 import { useSelector, useDispatch } from "react-redux";
 import { HeaderButtons, Item } from "react-navigation-header-buttons";
 import HeaderButton from "../../components/UI/HeaderButton";
 import Colors from "../../constants/Colors";
-import * as productsActions from "../../store/actions/product";
 
+import { Text } from "react-native";
+import * as productsActions from "../../store/actions/product";
+import ModalPopUp from "../../components/UI/Modal";
+import CartScreen from "../shop/CartScreen";
+import ModalCard from "../../components/UI/ModalCard";
 const UserProductScreen = (props) => {
+  console.log('Component Rendered!')
   const [isDataFetched, setDataIsFetched] = useState(false);
+  const [modalVisible, setModalVisible] = useState(true);
+  function forceReRender(){
+    const [value,setvalue] = useState(0)
+    return ()=> setvalue(value=>value+1)
+  }
+  useEffect(()=>{
+    setModalVisible(true)
+  },[isDataFetched])
   const userProducts = useSelector((state) => state.products.userProducts);
-  console.log('USER PRODUCTS',userProducts)
+  console.log("USER PRODUCTS", userProducts);
   const deleteHandler = (id) => {
-    Alert.alert("Do you want to delete this item?",'', [
+    Alert.alert("Do you want to delete this item?", "", [
       { text: "No", style: "default" },
       {
         text: "Yes",
@@ -27,6 +40,13 @@ const UserProductScreen = (props) => {
   const editProducutHandler = (id) => {
     props.navigation.navigate("EditProducts", { productId: id });
   };
+  if (userProducts.length === 0) {
+    console.log("No user products found!!",modalVisible);
+    const img = require('../../components/UI/NoProducts.jpeg')
+    return (
+      <ModalCard image={img} mainTitle="No Products Found!" secondTitle="Try Adding some of your Products"/>
+    )
+  }
   return (
     <FlatList
       data={userProducts}
@@ -50,7 +70,7 @@ const UserProductScreen = (props) => {
           <Button
             color={Colors.primary}
             title="Delete"
-            onPress={deleteHandler.bind(this,itemData.item.id)}
+            onPress={deleteHandler.bind(this, itemData.item.id)}
           />
         </ProductItem>
       )}

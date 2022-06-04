@@ -82,9 +82,9 @@ const CartScreen = (props) => {
                 quantity={itemData.item.quantity}
                 title={itemData.item.productTitle}
                 amount={itemData.item.sum}
-                onRemove={() => {
+                onRemove={(remove) => {
                   console.log("Removed");
-                  dispatch(cartActions.removeFromCart(itemData.item.productId));
+                  dispatch(cartActions.removeFromCart(itemData.item.productId,remove));
                 }}
               />
             );

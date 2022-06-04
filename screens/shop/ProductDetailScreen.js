@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   ScrollView,
@@ -10,6 +10,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import * as cartActions from "../../store/actions/cart";
 import Colors from "../../constants/Colors";
+import ModalPopUp from "../../components/UI/Modal";
 
 const ProductDetailScreen = (props) => {
   const prodId = props.navigation.getParam("productId");
@@ -19,8 +20,33 @@ const ProductDetailScreen = (props) => {
     })
   );
   const dispatch = useDispatch();
+  const [modalVisible,setModalVisible] = useState(false)
+  const [initialProductCount,SetInitialProductCount] = useState(1)
+  const [productItem,setProductItem] = useState()
+  const itemCountHandler = (identifier) => {
+    identifier == 1
+      ? SetInitialProductCount((previousCount) => ++previousCount)
+      : SetInitialProductCount((previousCount) => --previousCount);
+
+  };
   return (
     <ScrollView>
+      <ModalPopUp
+        addProducts={true}
+        intialItemCount={initialProductCount}
+        itemCountHandler={itemCountHandler}
+        isModalVisible={modalVisible}
+        modalTitle="Add Items to cart?"
+        modalHandler={(id) => {
+          setModalVisible(false);
+          SetInitialProductCount(1);
+          if (id !== 0) {
+            console.log("close Icon pressed!");
+            dispatch(cartActions.addToCart(productItem,initialProductCount ));
+          }
+          props.navigation.navigate("ProductsOverview");
+        }}
+      />
       <Image style={styles.image} source={{ uri: selectedProduct.imageUrl }} />
       {/* <View style={styles.actions}>
         <Button
@@ -38,7 +64,10 @@ const ProductDetailScreen = (props) => {
           color={Colors.primary}
           title="Add To Cart"
           onPress={() => {
-            dispatch(cartActions.addToCart(selectedProduct ));
+            SetInitialProductCount(1)
+            setModalVisible(true)
+            setProductItem(selectedProduct)
+            
           }}
         />
         </View>

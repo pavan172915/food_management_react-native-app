@@ -1,11 +1,14 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   Button,
   ActivityIndicator,
+  Animated,
+  SafeAreaView,
 } from "react-native";
+import Header from "../../components/UI/Header";
 import { useDispatch, useSelector } from "react-redux";
 import { TouchableOpacity } from "react-native-gesture-handler";
 import { Icon } from "react-native-elements/dist/icons/Icon";
@@ -18,9 +21,17 @@ import { useEffect } from "react";
 import ProductItem from "../../components/shop/ProductItem";
 import Colors from "../../constants/Colors";
 import MainButton from "../../components/UI/MainButton";
-
+import ModalPopUp from "../../components/UI/Modal";
+import BottomCard from "../../components/UI/BottomNavigator";
+const CONTAINER_HEIGHT = 50;
 const ProductStartScreen = (props) => {
   console.log("Start");
+  const scrollY = new Animated.Value(0);
+  const diffClamp = Animated.diffClamp(scrollY, 0, 50);
+  const translatedY = diffClamp.interpolate({
+    inputRange: [0, 50],
+    outputRange: [0, 50],
+  });
   const [isDataFetched, setDataIsFetched] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState();
@@ -46,6 +57,9 @@ const ProductStartScreen = (props) => {
   global.numberOfCartItems = cartItems.reduce((currentNumber, item) => {
     return currentNumber + item.quantity;
   }, 0);
+  useEffect(() => {
+    console.log("Cart count from dispatch func", global.numberOfCartItems);
+  }, [global.numberOfCartItems]);
   //props.navigation.setParams({ cartCount:global.numberOfCartItems });
   const [cartVal, setCartVal] = useState(global.numberOfCartItems);
   const findCartCount = (cart) => {
@@ -88,6 +102,15 @@ const ProductStartScreen = (props) => {
       productTitle: title,
     });
   };
+  const [modalVisibility, setModalVisibility] = useState(false);
+  const [productCount, setProductCount] = useState(1);
+  const [productItem, setproductItem] = useState();
+  const itemCountHandler = (identifier) => {
+    identifier == 1
+      ? setProductCount((previousCount) => ++previousCount)
+      : setProductCount((previousCount) => --previousCount);
+    console.log("products count", productCount);
+  };
   if (error) {
     return (
       <View style={styles.loader}>
@@ -114,62 +137,90 @@ const ProductStartScreen = (props) => {
       </View>
     );
   }
-  return (
-    <FlatList
-      refreshing={isRefreshing}
-      onRefresh={loadProducts}
-      data={products}
-      renderItem={(itemData) => {
-        return (
-          <ProductItem
-            image={itemData.item.imageUrl}
-            title={itemData.item.title}
-            price={itemData.item.price}
-            // onAddToCart={() => {
-            //   //setCartCount(prevState=>prevState+1);
-            //   //console.log("REDUX Ele",numberOfCartItems);
-            //   console.log('Cart to select')
-            //   props.navigation.setParams({
-            //     cartCount: findCartCount(cartItems),
-            //   });
+  let cartCount = global.numberOfCartItems;
 
-            //   //setCartVal(global.numberOfCartItems);
-            // }}
-            onSelect={() => {
-              selectItemHandler(itemData.item.id, itemData.item.title);
-            }}
-          >
-            <Button
-              color={Colors.primary}
-              title="Details"
-              onPress={() => {
-                console.log("Item selected");
+  return (
+    <View style={styles.container}>
+      <ModalPopUp
+        addProducts={true}
+        intialItemCount={productCount}
+        itemCountHandler={itemCountHandler}
+        isModalVisible={modalVisibility}
+        modalTitle="Add Items to cart?"
+        modalHandler={(id) => {
+          setModalVisibility(false);
+          setProductCount(1);
+          console.log("Final products", productCount);
+          console.log(productItem);
+          if (id !== 0) {
+            console.log("close Icon pressed!");
+            dispatch(cartActions.addToCart(productItem, productCount));
+            props.navigation.push("ProductsOverview");
+          }
+          
+        }}
+      />
+      <FlatList
+        ListHeaderComponentStyle={{ elevation: 0.1, zIndex: 1 }}
+        refreshing={isRefreshing}
+        onRefresh={loadProducts}
+        data={products}
+        renderItem={(itemData) => {
+          return (
+            <ProductItem
+              image={itemData.item.imageUrl}
+              title={itemData.item.title}
+              price={itemData.item.price}
+              // onAddToCart={() => {
+              //   //setCartCount(prevState=>prevState+1);
+              //   //console.log("REDUX Ele",numberOfCartItems);
+              //   console.log('Cart to select')
+              //   props.navigation.setParams({
+              //     cartCount: findCartCount(cartItems),
+              //   });
+
+              //   //setCartVal(global.numberOfCartItems);
+              // }}
+              onSelect={() => {
                 selectItemHandler(itemData.item.id, itemData.item.title);
               }}
-            />
-            <Button
-              color={Colors.primary}
-              title="To Cart"
-              onPress={() => {
-                // props.navigation.setParams({
-                //   cartCount: findCartCount(cartItems),
-                // });
-                console.log("Add to cart pressed");
-                dispatch(cartActions.addToCart(itemData.item));
-              }}
-            />
-          </ProductItem>
-        );
-      }}
-    />
+            >
+              <Button
+                color={Colors.primary}
+                title="Details"
+                onPress={() => {
+                  console.log("Item selected");
+                  selectItemHandler(itemData.item.id, itemData.item.title);
+                }}
+              />
+              <Button
+                color={Colors.primary}
+                title="To Cart"
+                onPress={() => {
+                  // props.navigation.setParams({
+                  //   cartCount: findCartCount(cartItems),
+                  // });
+                  console.log("Add to cart pressed");
+                  setProductCount(1);
+                  setModalVisibility(true);
+                  setproductItem(itemData.item);
+                  //dispatch(cartActions.addToCart(itemData.item));
+                }}
+              />
+            </ProductItem>
+          );
+        }}
+      />
+
+    </View>
   );
 };
 ProductStartScreen.navigationOptions = (navData) => {
-  //const cartCount = cartItems.length;
-  //console.log(navData)
-  //console.log(cartCount);
+  console.log(
+    "NavOptions executed!!",
+    navData.navigation.getParam("headerTitle")
+  );
   const cartCount = global.numberOfCartItems;
-  console.log("Global", cartCount);
   return {
     headerTitle: "All Products",
     headerStyle: {
@@ -182,7 +233,6 @@ ProductStartScreen.navigationOptions = (navData) => {
           title="Cart"
           iconName="md-menu"
           onPress={() => {
-            console.log("Pressed");
             navData.navigation.toggleDrawer();
           }}
           color={Colors.primary}
@@ -191,31 +241,6 @@ ProductStartScreen.navigationOptions = (navData) => {
     ),
     headerRight: () => (
       <HeaderButtons HeaderButtonComponent={HeaderButton}>
-        {/* <Item
-          title="Add"
-          iconName="ios-create"
-          onPress={() => {
-            console.log("Pressed");
-            navData.navigation.navigate('EditProducts');
-          }}
-          color={Colors.primary}
-        /> */}
-        {/* <View>
-        <Item
-          title="Cart"
-          iconName="md-cart"
-          onPress={() => {
-            console.log("Pressed");
-            navData.navigation.navigate("Cart");
-          }}
-        />
-        {cartCount > 0 ? (
-                  <View>
-                    <Text style={{color:"white"}}>{cartCount}</Text>
-                  </View>
-                ) : <Text>{10}</Text>}
-        </View> */}
-
         <View style={{ alignItems: "center", justifyContent: "center" }}>
           <TouchableOpacity
             onPress={() => {
@@ -277,6 +302,19 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+  },
+  container: {},
+  cartCount: {
+    width: "100%",
+    height: CONTAINER_HEIGHT,
+    backgroundColor: "#EE5407",
+    justifyContent: "center",
+    alignItems: "center",
+    position: "absolute", //Here is the trick
+    bottom: 0, //Here is the trick
+  },
+  contentContainerStyle: {
+    marginTop: CONTAINER_HEIGHT,
   },
 });
 
